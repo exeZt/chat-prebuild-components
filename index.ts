@@ -102,6 +102,39 @@ namespace Chat {
 		export interface IValidationClass {
 			isCorrect: (value: string | number, regex?: string | RegExp, type?: string) => boolean;
 		}
+
+		export namespace IAppHandler { // implementation interfaces
+			export interface IPreUser {
+				login: () => Promise<void>;
+				register: () => Promise<void>;
+				recovery: () => Promise<void>;
+			}
+			export interface IUsers {
+				enterChat: () => void;
+				leaveChat: () => void;
+				createChat: () => void;
+				deleteChat: () => void;
+				changeAccountCreds: () => void; // Account creds like password / mobile
+				changeAccountPublic: () => void; // Simple account data, like avatar or fname
+				blockUser: () => void;
+				unblockUser: () => void;
+				addContact: () => void;
+				removeContact: () => void;
+				editContact: () => void;
+			}
+			export interface IApp {
+				changedSettings: () => void;
+				notifyUsers: () => void;
+			}
+			export interface IChats {
+				onEnteredChat: () => void;
+				onLeavedChat: () => void;
+				onEditedChat: () => void;
+			}
+			export interface IMailer { // use with ext. libs
+				sendMail: () => void;
+			}
+		}
 	}
 
 	namespace ChatClasses {
@@ -121,14 +154,143 @@ namespace Chat {
 				}
 			}
 		}
+
+		export class AppHandler implements ChatTypes.IAppHandler.IApp {
+      changedSettings: () => void;
+      notifyUsers: () => void;
+		}
+
+    export class AppFlatStorage { // only for test purposes
+      protected storage: {};
+
+      constructor () {
+        this.storage;
+      }
+
+      addToStorage = async (): Promise<void> => {
+        
+      }
+
+      removeFromStorage = async (): Promise<void> => {
+        
+      }
+
+      getFromStorage = async (): Promise<void> => {
+
+      }
+    }
 	}
 
 	namespace ChatVariables {
-		export const ChatLimits: any = {
+		export const ChatLimits: { [v: string]: number } = {
 			maxMessageTextSize: 0xFA0, // 4000
 			maxUserCountInChat: 0x2710, // 10000
 			maxSocketIOTimeout: 0x2710,
 			maxUserChats: 0x258 // 600
 		}
 	}
+
+  namespace ChatDecorators {
+    const colors: {[v: string]: string} = {
+      error: '\x1b[31m%s\x1b[0m',
+      warn: '\x1b[33m%s\x1b[0m',
+      info: '\x1b[34m%s\x1b[0m',
+    }
+
+    export function Log (str: string) {
+      return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        console.log(colors.info, `${str}\n`)
+      }
+    }
+
+    export function LogErr (str: string) {
+      return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        console.log(colors.error, `${str}\n`)
+      }
+    }
+
+    export function LogWarn (str: string) {
+      return function (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) {
+        console.log(colors.warn, `${str}\n`)
+      }
+    }
+  }
+
+  namespace ChatDataStructures {
+    export function Stack() {
+      this.count = 0
+      this.storage = {}
+  
+      this.push = function(value) {
+          this.storage[this.count] = value
+          this.count++
+      }
+  
+      this.pop = function() {
+          if (this.count === 0) return undefined
+          this.count--
+          let result = this.storage[this.count]
+          delete this.storage[this.count]
+          return result
+      }
+  
+      this.peek = function() {
+          return this.storage[this.count - 1]
+      }
+  
+      this.size = function() {
+          return this.count
+      }
+    }
+
+    export function Queue<T>() {
+      let collection: T [] = []
+  
+      this.print = function() {
+        console.log(collection)
+      }
+  
+      this.enqueue = function(element) {
+        collection.push(element)
+      }
+  
+      this.dequeue = function() {
+        return collection.shift()
+      }
+  
+      this.front = function() {
+        return collection[0]
+      }
+  
+      this.isEmpty = function() {
+        return collection.length === 0
+      }
+  
+      this.size = function() {
+        return collection.length
+      }
+    }
+
+    function PriorityQueue<T>() {
+      let collection: T [];
+
+      this.enqueue = function(element) {
+        if (this.isEmpty()) {
+          collection.push(element)
+        } else {
+          let added = false
+          for (let i = 0; i < collection.length; i++) {
+            if (element[1] < collection[i][1]) {
+              collection.splice(i, 0, element)
+              added = true
+              break;
+            }
+          }
+          if (!added) {
+            collection.push(element)
+          }
+        }
+      }
+    }
+  }
 }
